@@ -1,0 +1,7 @@
+# Downloaded data
+data/
+
+# Generated Python and macOS files
+__pycache__/
+*.pyc
+.DS_Store

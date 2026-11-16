@@ -77,10 +77,27 @@ def main():
     vix = pd.read_csv(vix_path, usecols=["DATE", "CLOSE"])
     vix = vix.rename(columns={"DATE": "Date", "CLOSE": "VIX"})
     vix["Date"] = pd.to_datetime(vix["Date"], format="%m/%d/%Y")
+    if vix["Date"].isna().any():
+        raise ValueError("VIX data contains missing dates.")
     vix = vix[vix["Date"].between("2020-01-01", "2025-12-31")].copy()
+
+    if vix.empty:
+        raise ValueError("No VIX data found for 2020–2025.")
 
     print("VIX date range:", vix["Date"].min().date(), "to", vix["Date"].max().date())
     print("VIX row count:", len(vix))
+
+    vix["VIX"] = pd.to_numeric(vix["VIX"])
+    missing_vix = vix.isna().sum().sum()
+    duplicate_vix_dates = vix["Date"].duplicated().sum()
+    invalid_vix = ~np.isfinite(vix["VIX"]) | (vix["VIX"] <= 0)
+
+    print("VIX missing values:", missing_vix)
+    print("VIX duplicate dates:", duplicate_vix_dates)
+    print("VIX invalid values:", invalid_vix.sum())
+
+    if missing_vix > 0 or duplicate_vix_dates > 0 or invalid_vix.any():
+        raise ValueError("VIX validation failed. Check the data before continuing.")
 
 
 if __name__ == "__main__":

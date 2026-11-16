@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import kagglehub
+import numpy as np
 import pandas as pd
 
 
@@ -39,6 +40,27 @@ def main():
 
     if missing_values > 0 or duplicate_dates > 0:
         raise ValueError("Missing values or duplicate dates found. Check the data before continuing.")
+
+    price_columns = ["Open", "High", "Low", "Close"]
+    prices[price_columns] = prices[price_columns].apply(pd.to_numeric)
+    values = prices[price_columns]
+
+    # A price must be finite and greater than zero.
+    invalid_prices = (~np.isfinite(values) | (values <= 0)).any(axis=1)
+
+    # Open and Close must lie within the day's price range.
+    invalid_ranges = (
+        (prices["Open"] < prices["Low"])
+        | (prices["Open"] > prices["High"])
+        | (prices["Close"] < prices["Low"])
+        | (prices["Close"] > prices["High"])
+    )
+
+    print("Rows with invalid prices:", invalid_prices.sum())
+    print("Rows with invalid price ranges:", invalid_ranges.sum())
+
+    if invalid_prices.any() or invalid_ranges.any():
+        raise ValueError("Invalid prices found. Check the data before continuing.")
 
 
 if __name__ == "__main__":

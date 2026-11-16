@@ -18,3 +18,27 @@ def check_price_dates(prices):
         print("Missing:", missing_dates.strftime("%Y-%m-%d").tolist())
         print("Unexpected:", unexpected_dates.strftime("%Y-%m-%d").tolist())
         raise ValueError("S&P dates do not match the trading calendar. Check the data.")
+
+
+def compare_signal_dates(prices, vix, treasury, output_folder):
+    """Record calendar differences without filling or removing observations."""
+    price_dates = pd.DatetimeIndex(prices["Date"])
+    differences = []
+
+    for source, data in [("VIX", vix), ("Treasury", treasury)]:
+        signal_dates = pd.DatetimeIndex(data["Date"])
+        missing = price_dates.difference(signal_dates)
+        extra = signal_dates.difference(price_dates)
+
+        print(f"{source}: {len(missing)} S&P dates without an observation; {len(extra)} extra dates.")
+        for label, dates in [("Missing on S&P date", missing), ("Outside S&P dates", extra)]:
+            for date in dates:
+                differences.append({
+                    "Source": source,
+                    "Date": date.strftime("%Y-%m-%d"),
+                    "Difference": label,
+                })
+
+    output_folder.mkdir(parents=True, exist_ok=True)
+    report = pd.DataFrame(differences, columns=["Source", "Date", "Difference"])
+    report.to_csv(output_folder / "calendar_differences.csv", index=False)

@@ -1,5 +1,6 @@
 # Downloaded data
 data/
+outputs/
 
 # Generated Python and macOS files
 __pycache__/

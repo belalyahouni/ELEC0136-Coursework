@@ -2,6 +2,7 @@ from pathlib import Path
 
 from acquisition import load_prices, load_vix, load_treasury
 from storage import connect_database, create_tables, has_saved_data, read_data, save_data
+from validation import check_price_dates
 
 
 def main():
@@ -10,13 +11,18 @@ def main():
     connection = connect_database(data_folder)
     try:
         create_tables(connection)
-        if has_saved_data(connection):
+        saved_data = has_saved_data(connection)
+        if saved_data:
             prices, vix, treasury = read_data(connection)
             print("Loaded saved data from SQLite.")
         else:
             prices = load_prices(data_folder)
             vix = load_vix(data_folder)
             treasury = load_treasury(data_folder)
+
+        check_price_dates(prices)
+
+        if not saved_data:
             save_data(connection, prices, vix, treasury)
             print("Saved validated data to SQLite.")
 

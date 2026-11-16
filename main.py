@@ -3,6 +3,7 @@ from pathlib import Path
 import kagglehub
 import numpy as np
 import pandas as pd
+import requests
 
 
 def main():
@@ -61,6 +62,25 @@ def main():
 
     if invalid_prices.any() or invalid_ranges.any():
         raise ValueError("Invalid prices found. Check the data before continuing.")
+
+    vix_path = data_folder / "VIX_History.csv"
+    if not vix_path.exists():
+        print("Downloading VIX data...")
+        url = "https://cdn-api.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv"
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+        vix_path.write_bytes(response.content)
+    else:
+        print("Using the saved VIX CSV.")
+
+    # We only need the date and closing VIX level.
+    vix = pd.read_csv(vix_path, usecols=["DATE", "CLOSE"])
+    vix = vix.rename(columns={"DATE": "Date", "CLOSE": "VIX"})
+    vix["Date"] = pd.to_datetime(vix["Date"], format="%m/%d/%Y")
+    vix = vix[vix["Date"].between("2020-01-01", "2025-12-31")].copy()
+
+    print("VIX date range:", vix["Date"].min().date(), "to", vix["Date"].max().date())
+    print("VIX row count:", len(vix))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from pathlib import Path
+import xml.etree.ElementTree as ET
 
 import kagglehub
 import numpy as np
@@ -98,6 +99,61 @@ def main():
 
     if missing_vix > 0 or duplicate_vix_dates > 0 or invalid_vix.any():
         raise ValueError("VIX validation failed. Check the data before continuing.")
+
+    treasury_rows = []
+    url = "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"
+
+    for year in range(2020, 2026):
+        treasury_path = data_folder / f"treasury_{year}.xml"
+        if not treasury_path.exists():
+            print(f"Downloading Treasury data for {year}...")
+            response = requests.get(
+                url,
+                params={"data": "daily_treasury_yield_curve", "field_tdr_date_value": year},
+                timeout=30,
+            )
+            response.raise_for_status()
+            treasury_path.write_bytes(response.content)
+        else:
+            print(f"Using the saved Treasury XML for {year}.")
+
+        # Each XML properties element contains one day's rates.
+        root = ET.parse(treasury_path).getroot()
+        rows = root.findall(".//{*}properties")
+        if not rows:
+            raise ValueError(f"No Treasury observations found for {year}.")
+
+        for row in rows:
+            date = pd.to_datetime(row.findtext("{*}NEW_DATE"))
+            if pd.isna(date) or date.year != year:
+                raise ValueError(f"Missing or incorrect date in Treasury file for {year}.")
+            treasury_rows.append({
+                "Date": date,
+                "Yield_2Y": row.findtext("{*}BC_2YEAR"),
+                "Yield_10Y": row.findtext("{*}BC_10YEAR"),
+            })
+
+    if not treasury_rows:
+        raise ValueError("No Treasury observations found in the downloaded files.")
+
+    treasury = pd.DataFrame(treasury_rows)
+    treasury["Date"] = pd.to_datetime(treasury["Date"])
+    treasury[["Yield_2Y", "Yield_10Y"]] = treasury[["Yield_2Y", "Yield_10Y"]].apply(pd.to_numeric)
+    treasury = treasury[treasury["Date"].between("2020-01-01", "2025-12-31")].copy()
+
+    print("Treasury date range:", treasury["Date"].min().date(), "to", treasury["Date"].max().date())
+    print("Treasury row count:", len(treasury))
+
+    missing_yields = treasury.isna().sum().sum()
+    duplicate_treasury_dates = treasury["Date"].duplicated().sum()
+    invalid_yields = ~np.isfinite(treasury[["Yield_2Y", "Yield_10Y"]]).all(axis=1)
+
+    print("Treasury missing values:", missing_yields)
+    print("Treasury duplicate dates:", duplicate_treasury_dates)
+    print("Treasury rows with nonfinite yields:", invalid_yields.sum())
+
+    if missing_yields > 0 or duplicate_treasury_dates > 0 or invalid_yields.any():
+        raise ValueError("Treasury validation failed. Check the data before continuing.")
 
 
 if __name__ == "__main__":

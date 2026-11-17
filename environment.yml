@@ -10,3 +10,4 @@ dependencies:
   - pip:
       - yfinance>=0.2.54,<2
       - pandas-market-calendars
+      - torch

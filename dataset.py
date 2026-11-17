@@ -47,7 +47,7 @@ def build_samples(aligned, features, output_folder):
     records = []
     incomplete = 0
 
-    # First 19 sessions cannot end a full window; last two lack targets.
+    # First 19 sessions cannot end a full window. last two lack targets.
     for t in range(19, len(features) - 2):
         window = values[t - 19:t + 1]
         if np.isnan(window).any():
@@ -70,7 +70,7 @@ def build_samples(aligned, features, output_folder):
     y = samples["Target_return"].to_numpy(dtype=float)
     output_folder.mkdir(parents=True, exist_ok=True)
     samples.to_csv(output_folder / "sample_timeline.csv", index=False)
-    print(f"Built {len(X)} samples of 20 days × {values.shape[1]} features; "
+    print(f"Built {len(X)} samples of 20 days * {values.shape[1]} features; "
           f"{incomplete} windows excluded for missing features.")
     return X, y, samples
 

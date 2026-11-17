@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from acquisition import load_prices, load_vix, load_treasury
+from dataset import align_data
 from exploration import explore_data
 from storage import connect_database, create_tables, has_saved_data, read_data, save_data
 from validation import validate_source, check_price_dates, compare_signal_dates
@@ -31,6 +32,7 @@ def main():
             print("Saved validated data to SQLite.")
 
         compare_signal_dates(prices, vix, treasury, output_folder)
+        align_data(prices, vix, treasury, output_folder)
         print(f"Rows: {len(prices)} prices, {len(vix)} VIX, {len(treasury)} Treasury.")
         explore_data(prices, vix, treasury, output_folder)
     finally:

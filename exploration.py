@@ -21,12 +21,10 @@ def explore_data(prices, vix, treasury, output_folder):
     axes[1].set_title("VIX closing level")
     axes[1].set_ylabel("VIX points")
 
-    axes[2].plot(treasury["Date"], treasury["Yield_2Y"], label="2-year")
-    axes[2].plot(treasury["Date"], treasury["Yield_10Y"], label="10-year")
-    axes[2].set_title("Treasury yields")
+    axes[2].plot(treasury["Date"], treasury["Yield_10Y"], color="seagreen")
+    axes[2].set_title("10-year Treasury yield (Yahoo ^TNX)")
     axes[2].set_ylabel("Annualised yield (%)")
     axes[2].set_xlabel("Date")
-    axes[2].legend()
 
     for ax in axes:
         ax.grid(alpha=0.25)
@@ -38,12 +36,13 @@ def explore_data(prices, vix, treasury, output_folder):
     series = [
         ("S&P 500", prices, "Close", "%"),
         ("VIX", vix, "VIX", "index points"),
-        ("Treasury 2Y", treasury, "Yield_2Y", "percentage points"),
         ("Treasury 10Y", treasury, "Yield_10Y", "percentage points"),
     ]
     largest_changes = []
     for name, data, column, unit in series:
-        changes = data[["Date", column]].rename(columns={column: "Value"}).copy()
+        # Compare consecutive available values for this report only.
+        # The source frames and database keep all missing observations.
+        changes = data[["Date", column]].dropna(subset=[column]).rename(columns={column: "Value"}).copy()
         changes["Previous_date"] = changes["Date"].shift(1)
         changes["Previous_value"] = changes["Value"].shift(1)
         if name == "S&P 500":

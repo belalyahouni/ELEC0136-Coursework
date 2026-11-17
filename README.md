@@ -1,2 +1,28 @@
-# ELEC0136-Coursework
-Coursework for Machine Learning System Design
+# ELEC0136 coursework
+
+Daily S&P 500, VIX and 10-year Treasury yield data from Yahoo Finance through
+`yfinance`, covering 2020–2025. The pipeline acquires, validates, stores and
+explores data. Dataset alignment and modelling come later.
+
+```sh
+conda env create -f environment.yml
+conda activate mlsd-coursework
+python main.py
+```
+
+For an existing environment, use
+`conda env update -n mlsd-coursework -f environment.yml`.
+
+- Symbols: `^GSPC` (OHLC/volume), `^VIX` (Close), `^TNX` (Close).
+- TNX is a yield in percent. There is no 2-year yield.
+- CSVs and SQLite live in `data/yfinance/`.
+- Reruns use SQLite. Without a database, saved CSVs rebuild it; missing CSVs are downloaded.
+- Missing VIX/yield values are retained as SQL NULL for later date alignment.
+- `main.py` validates CSV/downloaded data before saving it to SQLite.
+- Database reruns trust the previously validated tables.
+- CSVs preserve acquisition results; they are not proof that validation passed.
+- Plots, calendar differences and large-change reports are saved in `outputs/`.
+- Large changes compare available values without altering stored observations.
+
+The user's real downloads passed local rebuild and database-reuse checks.
+Yahoo may revise historical data or fail to respond; saved CSVs allow local reuse.
